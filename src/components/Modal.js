@@ -2,14 +2,11 @@ import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@material-ui/core/Modal";
 
-function rand() {
-  return Math.round(Math.random() * 20) - 10;
-}
-
+// You can provide fixed values if you want to remove randomness
 function getModalStyle() {
-  const top = 50 + rand();
-  const left = 50 + rand();
-
+  const top = 50;  // Removed randomness for a consistent position
+  const left = 50;
+  
   return {
     top: `${top}%`,
     left: `${left}%`,
@@ -28,40 +25,21 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const SimpleModal = ({ show }) => {
+const SimpleModal = ({ show, handleClose }) => {
   const classes = useStyles();
-  // getModalStyle is not a pure function, we roll the style only on the first render
-  const [modalStyle] = React.useState(getModalStyle);
-  const [open, setOpen] = React.useState(false);
-
-  const handleOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const [modalStyle] = React.useState(getModalStyle); // Maintain initial style on first render
 
   return (
-    <div>
-      {/* <button type="button" onClick={handleOpen}>
-        Open Modal
-      </button> */}
-      <Modal
-        open={show}
-        onClose={handleClose}
-        aria-labelledby="simple-modal-title"
-        aria-describedby="simple-modal-description"
-      >
-        <div style={modalStyle} className={classes.paper}>
-          <h2 id="simple-modal-title">Correct!</h2>
-          {/* <p id="simple-modal-description">
-        Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-      </p>
-      */}
-        </div>
-      </Modal>
-    </div>
+    <Modal
+      open={show}
+      onClose={handleClose}  // Assuming handleClose is passed from the parent
+      aria-labelledby="simple-modal-title"
+      aria-describedby="simple-modal-description"
+    >
+      <div style={modalStyle} className={classes.paper}>
+        <h2 id="simple-modal-title">Correct!</h2>
+      </div>
+    </Modal>
   );
 };
 
