@@ -1,32 +1,49 @@
-# Learning Tool for Sinhala Sign Language Fingerspelling Aphabet
+
+
+# 👐 Learning Tool for Sinhala Sign Language Fingerspelling Alphabet
 
 ## Background
 
-This is the web version of https://github.com/aawgit/signs. Both use the same pose estimator, but web version uses JavaScript version while the desktop version uses Python. Models exported from the same Python project for pose classification.
-Pose estimation and classification happens in the browser. Some images of the cropped hand are sent to a back end service for improving the classifier. The user can turn this feature on or off from the UI.
+This project is a web-based version of [aawgit/signs](https://github.com/aawgit/signs), utilizing the same pose estimator. The key differences are that the web version employs JavaScript, while the desktop version is built using Python. The models are exported from the same Python project for pose classification.
 
-## Live demo
+Pose estimation and classification occur directly in the browser. Some cropped hand images are sent to a backend service to enhance the classifier's accuracy. Users have the option to enable or disable this feature from the UI.
 
-To see how this works, check out the demo at https://signsl.web.app/
+## 🚀 Live Demo
 
-## Installation
+To see the tool in action, check out the live demo at [https://signsl.web.app/](https://signsl.web.app/).
+
+## 🛠 Installation
 
 ### Prerequisites
 
-- NodeJS v16.14.0
+- Node.js v16.14.0 or higher
 
-### Install dependencies
+### Installing Dependencies
 
-- npm i
+Run the following command to install the necessary dependencies:
 
-### Start the service
+```
+npm install
+```
 
-- npm start
+### Starting the Service
 
-## Contributing
+To start the application, use the command:
 
-There are 3 ways you can contribute
+```
+npm start
+```
 
-1. Select an open issue and fix it
-2. Find issues and report them
-3. Improve the documentation
+## 🤝 Contributing
+
+There are several ways you can contribute to this project:
+
+1. **Select an open issue and fix it.** 🐛
+2. **Report any issues you encounter.** ⚠️
+3. **Enhance the documentation.** 📚
+
+Your contributions are greatly appreciated! 🙌
+
+## ⭐ Rate Us
+
+If you find this tool helpful, please give us a star on GitHub! 🌟
