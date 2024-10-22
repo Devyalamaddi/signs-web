@@ -3,157 +3,131 @@ import * as handpose from "@tensorflow-models/handpose";
 import Webcam from "react-webcam";
 import "@tensorflow/tfjs-backend-webgl";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import {  getPose2 } from "../service/detector.service";
+import { getPose2 } from "../service/detector.service";
 import { GAME_STATES } from "../utils/constants";
 import { cropAndSend } from "../service/trainer.service";
 
-const UPLOAD_INTERVAL = 2000
+const UPLOAD_INTERVAL = 2000;
 
-// TODO: Replace dummy values with real
-const expected = 1
-const current = 1
+// Dummy values for expected and current
+const expected = 1;
+const current = 1;
 
-let SEND_FLAG = true
-
-export default function VideoComp({ sendDataToParent, gameStatus, sendData, isMobile}) {
-  const [cameraHidden, setCameraHidden] = useState("hidden");
-  const [pausedImage, setPausedImage] = useState();
+export default function VideoComp({ sendDataToParent, gameStatus, sendData, isMobile }) {
+  const [cameraHidden, setCameraHidden] = useState(true);
+  const [pausedImage, setPausedImage] = useState(null);
   const webcamRef = useRef();
+  const [sendFlag, setSendFlag] = useState(true);
 
-  // TODO: Refactor and move these 2 functions to a seperate file
   const uploadPoses = async () => {
-    if (
-      typeof webcamRef.current !== "undefined" &&
-      webcamRef.current !== null &&
-      webcamRef.current.video.readyState === 4
-      && SEND_FLAG
-    ) {
-      // const lmEst = await net.estimateHands(webcamRef.current.video)
-      // TODO: Evaluate getPose and getPose2 in terms of accuracy and performance 
-      const lmEst = await getPose2(webcamRef.current.video, false)
+    if (webcamRef.current?.video.readyState === 4 && sendFlag) {
+      const lmEst = await getPose2(webcamRef.current.video, false);
       if (lmEst && lmEst.length > 0) {
-        const bbox = lmEst[0].boundingBox
+        const bbox = lmEst[0].boundingBox;
         if (bbox) {
           const crop = {
             x1: bbox.topLeft[0],
             y1: bbox.topLeft[1],
             x2: bbox.bottomRight[0],
-            y2: bbox.bottomRight[1]
-          }
-          captureAndSend(crop, expected, current)
+            y2: bbox.bottomRight[1],
+          };
+          captureAndSend(crop);
         }
       }
     }
-    setTimeout(() => {
-      uploadPoses();
-
-    }, UPLOAD_INTERVAL);
+    setTimeout(uploadPoses, UPLOAD_INTERVAL);
   };
 
-  const captureAndSend = (crop, exp, cur) => {
+  const captureAndSend = (crop) => {
     const image = webcamRef.current.getScreenshot();
-    cropAndSend(image, crop, exp, cur)
-  }
-  //
-  
-  const capture = React.useCallback(
-    () => {
-      if (!pausedImage) {
-        const image = webcamRef.current.getScreenshot();
-        setPausedImage(image)
-      }
-    },
-    [webcamRef]
-  );
+    cropAndSend(image, crop, expected, current);
+  };
+
+  const capture = () => {
+    if (!pausedImage) {
+      const image = webcamRef.current.getScreenshot();
+      setPausedImage(image);
+    }
+  };
 
   const detect = async () => {
-    if (
-      typeof webcamRef.current !== "undefined" &&
-      webcamRef.current !== null &&
-      webcamRef.current.video.readyState === 4
-    ) {
-      // const poseEstimateResult = await net.estimateHands(webcamRef.current.video)
-      // const poseEstimateResult = null //await getPose(webcamRef.current.video)
-      // await getPose(webcamRef.current.video)
-      // TODO: Evaluate getPose and getPose2 in terms of accuracy and performance 
-      const poseEstimateResult = await getPose2(webcamRef.current.video, isMobile)
+    if (webcamRef.current?.video.readyState === 4) {
+      const poseEstimateResult = await getPose2(webcamRef.current.video, isMobile);
       sendDataToParent(poseEstimateResult);
-      if (cameraHidden === "hidden") {
-        setCameraHidden("visible");
+      if (cameraHidden) {
+        setCameraHidden(false);
       }
     }
-    setTimeout(() => {
+    setTimeout(detect, 100);
+  };
+
+  useEffect(() => {
+    const runHandpose = async () => {
+      await handpose.load();
       detect();
-    }, 100);
-  };
+      uploadPoses();
+    };
+    runHandpose();
+  }, []);
 
-  const runHandpose = async () => {
-    // const net = await handpose.load();
-    detect();
-    uploadPoses()
-  };
+  useEffect(() => {
+    setSendFlag(!sendData);
+  }, [sendData]);
 
-  useEffect(() => runHandpose(), []);
+  const videoWidth = gameStatus === GAME_STATES.won || cameraHidden ? 0 : "100%";
 
-  useEffect(() => ()=>{
-    // This should be the other way around, but this works. Don't know how. Shame!
-    sendData? SEND_FLAG=false: SEND_FLAG=true
-  }, 
-    [sendData]);
-
-  let widthx = "100%"
-  if ((gameStatus == GAME_STATES.won) || cameraHidden=='hidden') widthx = 0
-  const videoC = <div style={{ visibility: gameStatus != undefined }}>
+  const videoC = (
     <Webcam
       ref={webcamRef}
       screenshotFormat="image/jpeg"
-      // videoConstraints={{
-      //   height: 600,
-      //   width: 600
-      // }}
       style={{
-        width: widthx,
-        top: 0, left: 0, bottom: 0, right: 0
+        width: videoWidth,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
       }}
       className="rounded"
       mirrored={true}
     />
-  </div>
+  );
 
-  let videoP = <div></div>
-  if (gameStatus == GAME_STATES.won) {
-    let image
-    if (pausedImage) image = pausedImage
-    else {
-      capture()
-    }
-    // Dirty trick link this with main components state change
-    setTimeout(function () {
-      setPausedImage(null)
-    }, 3000);
-    //
-    videoP =
-      <img src={image} className="rounded" style={{
-        visibility: cameraHidden,
-        bottom: 0,
-        width: "100%"
-      }} />
-
+  let videoP = null;
+  if (gameStatus === GAME_STATES.won) {
+    if (!pausedImage) capture();
+    videoP = (
+      <img
+        src={pausedImage}
+        className="rounded"
+        style={{
+          visibility: cameraHidden ? "hidden" : "visible",
+          width: "100%",
+        }}
+        alt="Paused"
+      />
+    );
+    setTimeout(() => setPausedImage(null), 3000);
   }
 
-  let correctSign = <div></div>
-  if (gameStatus == GAME_STATES.won) correctSign = <img src={process.env.PUBLIC_URL + "correct.png"}
-    style={{
-      width: "25%",
-      top: "50%",
-      left: "45%",
-      position: "absolute"
-    }}></img>
+  const correctSign = gameStatus === GAME_STATES.won && (
+    <img
+      src={`${process.env.PUBLIC_URL}correct.png`}
+      style={{
+        width: "25%",
+        position: "absolute",
+        top: "50%",
+        left: "45%",
+      }}
+      alt="Correct Sign"
+    />
+  );
+
   return (
-    <div >
-      {cameraHidden === "hidden" && (
+    <div>
+      {cameraHidden && (
         <div className="Outer">
-          <div className="Spacer"></div>
+          <div className="Spacer" />
           <p>Loading. Please wait.</p>
           <LinearProgress />
         </div>
