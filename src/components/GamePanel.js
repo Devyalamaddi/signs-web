@@ -14,53 +14,58 @@ const GamePanel = ({
   expectedSign,
   moveToNext
 }) => {
-  const [clf, setClf] = useState("");
+  const [clf, setClf] = useState(null);
+  const [prediction, setPrediction] = useState(null);
 
   useEffect(() => {
     const Xtrain = [];
     const ytrain = [];
 
-    trainingData.forEach((td, index) => {
+    trainingData.forEach((td) => {
       const [y, ...x] = td;
-
       ytrain.push(y);
       Xtrain.push(x);
     });
 
-    setClf(getMultiLevelClassifier(Xtrain, ytrain));
+    const classifier = getMultiLevelClassifier(Xtrain, ytrain);
+    setClf(classifier);
   }, []);
 
-  let prediction;
-  if (handData && masterGameStatus !== GAME_STATES.won) {
-    const landmarks = handData[0]?.landmarks ?? null;
+  useEffect(() => {
+    if (handData && clf && masterGameStatus !== GAME_STATES.won) {
+      const landmarks = handData[0]?.landmarks ?? null;
+      const [featureVector, angles] = buildFeatureVector(landmarks);
 
-    const [featureVector, angles] = buildFeatureVector(landmarks);
-
-    if (featureVector) {
-      prediction = clf.predict(featureVector, angles);
-      sendSignToParent(prediction);
+      if (featureVector) {
+        const currentPrediction = clf.predict(featureVector, angles);
+        setPrediction(currentPrediction);
+        sendSignToParent(currentPrediction);
+      }
     }
-  }
+  }, [handData, clf, masterGameStatus, sendSignToParent]);
 
-  // TODO: Move this block to a game controller
-  if (expectedSign && expectedSign == prediction) {
-    sendGameStatusToParent(GAME_STATES.won);
-  }
-  
+  useEffect(() => {
+    if (expectedSign && expectedSign === prediction) {
+      sendGameStatusToParent(GAME_STATES.won);
+    }
+  }, [expectedSign, prediction, sendGameStatusToParent]);
+
   return (
     <div style={{ alignContent: "center", textAlign: "center" }}>
       <img
         src={`${process.env.PUBLIC_URL}${expectedSign}.jpg`}
         className="rounded"
-        style={{ display: "block", marginLeft: "auto", marginRight: "auto", width: "100%" }}
+        style={{
+          display: "block",
+          marginLeft: "auto",
+          marginRight: "auto",
+          width: "100%",
+        }}
         alt="Expected sign"
       />
       <p style={{ textAlign: "center", fontSize: "50px", color: "#eb8c34" }}>
         {expectedSign ? LABEL_VS_INDEX[expectedSign].split(" ")[1] : null}
       </p>
-      {/* <p style={{ textAlign: "center", fontSize: "50px", color: "#eb8c34" }}>
-        {`debug msg ${prediction}`}
-      </p> */}
       <button
         type="button"
         className="btn btn-outline-primary"
